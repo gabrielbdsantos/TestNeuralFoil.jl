@@ -3,6 +3,7 @@
 Small playground to call and test [NeuralFoil.jl](https://github.com/byuflowlab/NeuralFoil.jl)
 against the original Python package.
 
+The airfoil database was created using [airfoildb](https://github.com/gabrielbdsantos/airfoildb).
 
 ## Prerequisites
 
@@ -22,3 +23,7 @@ against the original Python package.
     ```bash
     $ julia --project=@. --eval 'using Pkg; Pkg.instantiate()'
     ```
+
+## License
+
+MIT
