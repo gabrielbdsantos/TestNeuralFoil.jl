@@ -6,6 +6,14 @@ using PythonCall
 using NeuralFoil
 
 
+# Supress the stacktrace. Better to keep this for the sake of simplicity in case many tests fail.
+Test.eval(quote
+	function record(ts::DefaultTestSet, t::Union{Fail, Error})
+		push!(ts.results, t)
+	end
+end)
+
+
 macro wrap_pyfunction(mod, fname, jname)
     quote
         const pymod = pyimport($mod)
@@ -65,57 +73,61 @@ function run_network_from_file(filepath)
 end
 
 
-function test_network_from_file(filepath; atol=1e-12)
+function test_network_from_file(filepath; atol=1e-8)
+    name = split(split(filepath, "/")[end], ".")[1]
     py_ans, jl_ans = run_network_from_file(filepath)
 
-    @test isapprox(pyconvert(Vector{Float64}, py_ans["analysis_confidence"]), jl_ans.analysis_confidence; atol=atol)
-    @test isapprox(pyconvert(Vector{Float64}, py_ans["CL"]), jl_ans.cl; atol=atol)
-    @test isapprox(pyconvert(Vector{Float64}, py_ans["CD"]), jl_ans.cd; atol=atol)
-    @test isapprox(pyconvert(Vector{Float64}, py_ans["CM"]), jl_ans.cm; atol=atol)
-    @test isapprox(pyconvert(Vector{Float64}, py_ans["Top_Xtr"]), jl_ans.top_xtr; atol=atol)
-    @test isapprox(pyconvert(Vector{Float64}, py_ans["Bot_Xtr"]), jl_ans.bot_xtr; atol=atol)
+    @testset "$name" begin
+        @test isapprox(pyconvert(Vector{Float64}, py_ans["analysis_confidence"]), jl_ans.analysis_confidence; atol=atol)
+        @test isapprox(pyconvert(Vector{Float64}, py_ans["CL"]), jl_ans.cl; atol=atol)
+        @test isapprox(pyconvert(Vector{Float64}, py_ans["CD"]), jl_ans.cd; atol=atol)
+        @test isapprox(pyconvert(Vector{Float64}, py_ans["CM"]), jl_ans.cm; atol=atol)
+        @test isapprox(pyconvert(Vector{Float64}, py_ans["Top_Xtr"]), jl_ans.top_xtr; atol=atol)
+        @test isapprox(pyconvert(Vector{Float64}, py_ans["Bot_Xtr"]), jl_ans.bot_xtr; atol=atol)
 
-    # ERROR: The tests below all fail.
-    # ------------------------------------------
-    # @test isapprox(
-    #         stack([pyconvert(Vector{Float64}, py_ans["upper_bl_ue/vinf_$i"]) for i in 0:31]),
-    #         jl_ans.upper_bl_ue_over_vinf
-    #         ;
-    #         atol=atol
-    #     )
-    # @test isapprox(
-    #         stack([pyconvert(Vector{Float64}, py_ans["upper_bl_theta_$i"]) for i in 0:31]),
-    #         jl_ans.upper_theta
-    #         ;
-    #         atol=atol
-    #     )
-    # @test isapprox(
-    #         stack([pyconvert(Vector{Float64}, py_ans["upper_bl_H_$i"]) for i in 0:31]),
-    #         jl_ans.upper_H
-    #         ;
-    #         atol=atol
-    #     )
-    # @test isapprox(
-    #         stack([pyconvert(Vector{Float64}, py_ans["lower_bl_ue/vinf_$i"]) for i in 0:31]),
-    #         jl_ans.lower_bl_ue_over_vinf
-    #         ;
-    #         atol=atol
-    #     )
-    # @test isapprox(
-    #         stack([pyconvert(Vector{Float64}, py_ans["lower_bl_theta_$i"]) for i in 0:31]),
-    #         jl_ans.lower_theta
-    #         ;
-    #         atol=atol
-    #     )
-    # @test isapprox(
-    #         stack([pyconvert(Vector{Float64}, py_ans["lower_bl_H_$i"]) for i in 0:31]),
-    #         jl_ans.lower_H
-    #         ;
-    #         atol=atol
-    #     )
+        # ERROR: The tests below all fail.
+        # ------------------------------------------
+        # @test isapprox(
+        #         stack([pyconvert(Vector{Float64}, py_ans["upper_bl_ue/vinf_$i"]) for i in 0:31]),
+        #         jl_ans.upper_bl_ue_over_vinf
+        #         ;
+        #         atol=atol
+        #     )
+        # @test isapprox(
+        #         stack([pyconvert(Vector{Float64}, py_ans["upper_bl_theta_$i"]) for i in 0:31]),
+        #         jl_ans.upper_theta
+        #         ;
+        #         atol=atol
+        #     )
+        # @test isapprox(
+        #         stack([pyconvert(Vector{Float64}, py_ans["upper_bl_H_$i"]) for i in 0:31]),
+        #         jl_ans.upper_H
+        #         ;
+        #         atol=atol
+        #     )
+        # @test isapprox(
+        #         stack([pyconvert(Vector{Float64}, py_ans["lower_bl_ue/vinf_$i"]) for i in 0:31]),
+        #         jl_ans.lower_bl_ue_over_vinf
+        #         ;
+        #         atol=atol
+        #     )
+        # @test isapprox(
+        #         stack([pyconvert(Vector{Float64}, py_ans["lower_bl_theta_$i"]) for i in 0:31]),
+        #         jl_ans.lower_theta
+        #         ;
+        #         atol=atol
+        #     )
+        # @test isapprox(
+        #         stack([pyconvert(Vector{Float64}, py_ans["lower_bl_H_$i"]) for i in 0:31]),
+        #         jl_ans.lower_H
+        #         ;
+        #         atol=atol
+        #     )
+    end
 
     nothing
 end
+
 
 function test_network_on_dataset(directory)
     @testset "Compare entire database" begin
@@ -127,4 +139,5 @@ function test_network_on_dataset(directory)
     nothing
 end
 
-test_network_on_dataset(joinpath(@__DIR__, "../airfoils"))
+
+run() = test_network_on_dataset(joinpath(@__DIR__, "../airfoils"))

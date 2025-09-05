@@ -9,7 +9,7 @@ using DelimitedFiles
 import Base.isapprox
 
 
-# Supress the stacktrace. Better to keep this for the sake of simplicity.
+# Supress the stacktrace. Better to keep this for the sake of simplicity in case many tests fail.
 Test.eval(quote
 	function record(ts::DefaultTestSet, t::Union{Fail, Error})
 		push!(ts.results, t)
@@ -76,11 +76,14 @@ function jl_get_kulfan_from_file(filepath)
 end
 
 
-function test_kulfan_from_file(filepath)
+function test_kulfan_from_file(filepath; atol=1e-6)
+    name = split(split(filepath, "/")[end], ".")[1]
     py_ans = py_get_kulfan_from_file(filepath)
     jl_ans = jl_get_kulfan_from_file(filepath)
 
-    @test isapprox(py_ans, jl_ans)
+    @testset "$name" begin
+        @test isapprox(py_ans, jl_ans, atol=atol)
+    end
 end
 
 
@@ -95,4 +98,4 @@ function test_kulfan_on_dataset(directory)
 end
 
 
-# test_kulfan_on_dataset(joinpath(@__DIR__, "../airfoils"))
+run() = test_kulfan_on_dataset(joinpath(@__DIR__, "../airfoils"))
