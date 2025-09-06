@@ -96,4 +96,4 @@ airfoil coordinates using B-Splines.
 ## License
 
 This repository is licensed under the terms of the MIT license. For further
-information, see (LICENSE)[LICENSE.md].
+information, see [LICENSE](LICENSE.md).
