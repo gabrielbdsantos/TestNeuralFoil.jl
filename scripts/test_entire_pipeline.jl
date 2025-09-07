@@ -142,10 +142,10 @@ function test_network_from_file(filepath; atol=1e-8)
 end
 
 
-function test_network_on_dataset(directory)
+function test_network_on_dataset(directory; atol=1e-8)
     @testset "Compare entire database" begin
         for file in readdir(directory)
-            test_network_from_file(joinpath(directory, file))
+            test_network_from_file(joinpath(directory, file); atol=atol)
         end
     end
 
@@ -153,4 +153,4 @@ function test_network_on_dataset(directory)
 end
 
 
-run() = test_network_on_dataset(joinpath(@__DIR__, "../airfoils"))
+run(; atol=1e-8) = test_network_on_dataset(joinpath(@__DIR__, "../airfoils"); atol=atol)

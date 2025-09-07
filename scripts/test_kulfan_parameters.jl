@@ -54,7 +54,7 @@ end
 
 function py_get_kulfan_from_file(filepath)
     coords = np_array(coordinates_from_file(filepath))
-    params = py_get_kulfan_parameters(coords)
+    params = py_get_kulfan_parameters(coords, normalize_coordinates=true)
 
     upper_weights = pyconvert(Vector{Float64}, params["upper_weights"])
     lower_weights = pyconvert(Vector{Float64}, params["lower_weights"])
@@ -87,10 +87,10 @@ function test_kulfan_from_file(filepath; atol=1e-6)
 end
 
 
-function test_kulfan_on_dataset(directory)
+function test_kulfan_on_dataset(directory; atol=1e-6)
     @testset "Compare entire database" begin
         for file in readdir(directory)
-            test_kulfan_from_file(joinpath(directory, file))
+            test_kulfan_from_file(joinpath(directory, file); atol=atol)
         end
     end
 
@@ -98,4 +98,4 @@ function test_kulfan_on_dataset(directory)
 end
 
 
-run() = test_kulfan_on_dataset(joinpath(@__DIR__, "../airfoils"))
+run(; atol=1e-6) = test_kulfan_on_dataset(joinpath(@__DIR__, "../airfoils"); atol=atol)
