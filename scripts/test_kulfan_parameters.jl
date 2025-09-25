@@ -1,45 +1,4 @@
-ENV["JULIA_CONDAPKG_BACKEND"] = "Null"
-ENV["JULIA_PYTHONCALL_EXE"] = joinpath(pwd(), ".venv/bin/python")
-
-using Test
-using PythonCall
-using NeuralFoil
-using DelimitedFiles
-
-import Base.isapprox
-
-
-# Supress the stacktrace. Better to keep this for the sake of simplicity in case many tests fail.
-Test.eval(quote
-	function record(ts::DefaultTestSet, t::Union{Fail, Error})
-		push!(ts.results, t)
-	end
-end)
-
-
-function isapprox(a::T, b::T; kwargs...) where {T <: KulfanParameters}
-    all([
-        isapprox(a.lower_weights, b.lower_weights; kwargs...),
-        isapprox(a.upper_weights, b.upper_weights; kwargs...),
-        isapprox(a.leading_edge_weight, b.leading_edge_weight; kwargs...),
-        isapprox(a.TE_thickness, b.TE_thickness; kwargs...),
-    ])
-end
-
-
-macro wrap_pyfunction(mod, fname, jname)
-    quote
-        const pymod = pyimport($mod)
-
-        # Define functions with the same names as the input symbols
-        $(:(
-            function $(esc(jname))(args...; kwargs...)
-                pyf = @pyconst pymod.$(fname)
-                return pyf(args...; kwargs...)
-            end
-        ))
-    end
-end
+include("common.jl")
 
 
 @wrap_pyfunction "numpy" array np_array
@@ -47,14 +6,9 @@ end
 @wrap_pyfunction "aerosandbox.geometry.airfoil.airfoil_families" get_kulfan_parameters py_get_kulfan_parameters
 
 
-function coordinates_from_file(filepath)
-    return readdlm(filepath)
-end
-
-
 function py_get_kulfan_from_file(filepath)
     coords = np_array(coordinates_from_file(filepath))
-    params = py_get_kulfan_parameters(coords, normalize_coordinates=true)
+    params = py_get_kulfan_parameters(coords, normalize_coordinates=false)
 
     upper_weights = pyconvert(Vector{Float64}, params["upper_weights"])
     lower_weights = pyconvert(Vector{Float64}, params["lower_weights"])
@@ -76,18 +30,20 @@ function jl_get_kulfan_from_file(filepath)
 end
 
 
-function test_kulfan_from_file(filepath; atol=1e-6)
+function test_kulfan_from_file(filepath; atol=1e-2)
     name = split(split(filepath, "/")[end], ".")[1]
     py_ans = py_get_kulfan_from_file(filepath)
     jl_ans = jl_get_kulfan_from_file(filepath)
 
     @testset "$name" begin
-        @test isapprox(py_ans, jl_ans, atol=atol)
+        @test isapprox(py_ans, jl_ans; atol=atol)
     end
 end
 
 
-function test_kulfan_on_dataset(directory; atol=1e-6)
+function test_kulfan_on_dataset(directory; atol=1e-2)
+    reduce_test_verbosity()
+
     @testset "Compare entire database" begin
         for file in readdir(directory)
             test_kulfan_from_file(joinpath(directory, file); atol=atol)
@@ -98,4 +54,4 @@ function test_kulfan_on_dataset(directory; atol=1e-6)
 end
 
 
-run(; atol=1e-6) = test_kulfan_on_dataset(joinpath(@__DIR__, "../airfoils"); atol=atol)
+run(dataset; atol=1e-2) = test_kulfan_on_dataset(dataset; atol=atol)

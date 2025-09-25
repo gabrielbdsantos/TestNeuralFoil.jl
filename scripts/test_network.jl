@@ -1,32 +1,4 @@
-ENV["JULIA_CONDAPKG_BACKEND"] = "Null"
-ENV["JULIA_PYTHONCALL_EXE"] = joinpath(pwd(), ".venv/bin/python")
-
-using Test
-using PythonCall
-using NeuralFoil
-
-
-# Supress the stacktrace. Better to keep this for the sake of simplicity in case many tests fail.
-Test.eval(quote
-	function record(ts::DefaultTestSet, t::Union{Fail, Error})
-		push!(ts.results, t)
-	end
-end)
-
-
-macro wrap_pyfunction(mod, fname, jname)
-    quote
-        const pymod = pyimport($mod)
-
-        # Define functions with the same names as the input symbols
-        $(:(
-            function $(esc(jname))(args...; kwargs...)
-                pyf = @pyconst pymod.$(fname)
-                return pyf(args...; kwargs...)
-            end
-        ))
-    end
-end
+include("common.jl")
 
 
 @wrap_pyfunction "numpy" array np_array
@@ -36,7 +8,7 @@ end
 
 
 function py_get_kulfan_from_file(filepath)
-    params = py_get_kulfan_parameters(np_genfromtxt(filepath))
+    params = py_get_kulfan_parameters(np_genfromtxt(filepath), normalize_coordinates=true)
 
     upper_weights = pyconvert(Vector{Float64}, params["upper_weights"])
     lower_weights = pyconvert(Vector{Float64}, params["lower_weights"])
@@ -129,10 +101,12 @@ function test_network_from_file(filepath; atol=1e-8)
 end
 
 
-function test_network_on_dataset(directory)
+function test_network_on_dataset(directory; atol=1e-8)
+    reduce_test_verbosity()
+
     @testset "Compare entire database" begin
         for file in readdir(directory)
-            test_network_from_file(joinpath(directory, file))
+            test_network_from_file(joinpath(directory, file); atol=atol)
         end
     end
 
@@ -140,4 +114,4 @@ function test_network_on_dataset(directory)
 end
 
 
-run() = test_network_on_dataset(joinpath(@__DIR__, "../airfoils"))
+run(database; atol=1e-8) = test_network_on_dataset(database; atol=atol)

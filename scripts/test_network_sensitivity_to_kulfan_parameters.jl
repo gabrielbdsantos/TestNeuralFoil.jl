@@ -1,32 +1,4 @@
-ENV["JULIA_CONDAPKG_BACKEND"] = "Null"
-ENV["JULIA_PYTHONCALL_EXE"] = joinpath(pwd(), ".venv/bin/python")
-
-using Test
-using PythonCall
-using NeuralFoil
-
-
-# Supress the stacktrace. Better to keep this for the sake of simplicity in case many tests fail.
-Test.eval(quote
-	function record(ts::DefaultTestSet, t::Union{Fail, Error})
-		push!(ts.results, t)
-	end
-end)
-
-
-macro wrap_pyfunction(mod, fname, jname)
-    quote
-        const pymod = pyimport($mod)
-
-        # Define functions with the same names as the input symbols
-        $(:(
-            function $(esc(jname))(args...; kwargs...)
-                pyf = @pyconst pymod.$(fname)
-                return pyf(args...; kwargs...)
-            end
-        ))
-    end
-end
+include("common.jl")
 
 
 @wrap_pyfunction "numpy" array np_array
@@ -87,8 +59,8 @@ function test_network_from_file(filepath, epsilon; atol=1e-3)
         @test isapprox(ans_orig.cl, ans_modified.cl; atol=atol)
         @test isapprox(ans_orig.cd, ans_modified.cd; atol=atol)
         @test isapprox(ans_orig.cm, ans_modified.cm; atol=atol)
-        # @test isapprox(ans_orig.top_xtr, ans_modified.top_xtr; atol=atol)
-        # @test isapprox(ans_orig.bot_xtr, ans_modified.bot_xtr; atol=atol)
+        @test isapprox(ans_orig.top_xtr, ans_modified.top_xtr; atol=atol)
+        @test isapprox(ans_orig.bot_xtr, ans_modified.bot_xtr; atol=atol)
         #
         # @test isapprox(ans_orig.upper_bl_ue_over_vinf, ans_modified.upper_bl_ue_over_vinf; atol=atol)
         # @test isapprox(ans_orig.upper_H, ans_modified.upper_H; atol=atol)
@@ -104,6 +76,8 @@ end
 
 
 function test_network_on_dataset(directory, epsilon; atol=1e-3)
+    reduce_test_verbosity()
+
     @testset "Compare entire database" begin
         for file in readdir(directory)
             test_network_from_file(joinpath(directory, file), epsilon; atol=atol)
@@ -113,6 +87,6 @@ function test_network_on_dataset(directory, epsilon; atol=1e-3)
     nothing
 end
 
-function run(; epsilon=1e-3, atol=1e-3)
-    test_network_on_dataset(joinpath(@__DIR__, "../airfoils"), epsilon; atol=atol)
+function run(database; epsilon=1e-3, atol=1e-3)
+    test_network_on_dataset(database, epsilon; atol=atol)
 end

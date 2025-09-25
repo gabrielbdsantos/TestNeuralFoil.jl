@@ -8,9 +8,11 @@ original Python package.
 ## Tests description (and rationale)
 
 The airfoil database was created using
-[airfoildb](https://github.com/gabrielbdsantos/airfoildb), which downloads
-the airfoil coordinates from the UIUC airfoil database and standardizes the
-airfoil coordinates using B-Splines.
+[airfoildb](https://github.com/gabrielbdsantos/airfoildb), which downloads the
+airfoil coordinates from the UIUC airfoil database and standardizes them using
+B-Splines. The folder `airfoils/raw` contains the raw coordinates, whereas the
+folder `airfoils/uniform` contains the standardized representation obtained
+with B-Splines.
 
 > [!IMPORTANT]
 > The tests evaluating the neural network have a hint of randomness in them.
@@ -27,10 +29,11 @@ airfoil coordinates using B-Splines.
 
 1. `scripts/test_kulfan_parameters.jl`
 
-    It tests whether NeuralFoil.jl produces the same CST parameters as the
+    It tests whether NeuralFoil.jl produces the same Kulfan parameters as the
     Python package when evaluated on a large dataset.
 
-    Current status: 0 passed, 1638 failed, 0 errored, 0 broken.
+    Current status (airfoils/raw): 896 passed, 740 failed, 0 errored, 0 broken.\
+    Current status (airfoils/uniform): 420 passed, 1216 failed, 0 errored, 0 broken.
 
 1. `scripts/test_network.jl`
 
@@ -38,15 +41,12 @@ airfoil coordinates using B-Splines.
     output given the same set of inputs---i.e., Kulfan parameters, angles of
     attack, and Reynolds numbers.
 
-    Current status: 9828 passed, 0 failed, 0 errored, 0 broken.
+    Current status (airfoils/raw): 9816 passed, 0 failed, 0 errored, 0 broken.\
+    Current status (airfoils/uniform): 9816 passed, 0 failed, 0 errored, 0 broken.
 
-    > [!NOTE]
-    > In this case, some tests are disabled. That is because the results for
-    > boundary layer do not pass the tests. Some preliminary tests I've done
-    > show that the numerical results are similar, but the output matrices
-    > are different. That is likely due to the way that NeuralFoil.jl
-    > reshapes the output matrices. Nonetheless, it deserves further
-    > investigation.
+    > Some tests are disabled because the results for boundary layer do not
+    > pass the tests at all. This deserves further investigation. The outputed
+    > matrices are probably transposed.
 
 1. `scripts/test_entire_pipeline.jl`
 
@@ -54,7 +54,8 @@ airfoil coordinates using B-Splines.
     package given the airfoil coordinates, angles of attack, and Reynolds
     numbers.
 
-    Current status: 7 passed, 9821 failed, 0 errored, 0 broken.
+    Current status (airfoils/raw): 5323 passed, 4493 failed, 0 errored, 0 broken.\
+    Current status (airfoils/uniform): 2537 passed, 7279 failed, 0 errored, 0 broken.
 
 1. `scripts/test_network_sensitivity_to_kulfan_parameters.jl`
 
@@ -64,15 +65,29 @@ airfoil coordinates using B-Splines.
     Kulfan parameters. However, how sensitive is the neural network to
     perturbations in the Kulfan parameters?
 
-    So, this test compares the outputs produced by the Kulfan parameters
-    obtained for various airfoils with the outputs obtained using slightly
-    different Kulfan parameters (in the order of ~1e-3). Also,
-    the absolute tolerance for the tests was slightly higher than the usual.
+    So, this test compares the network predictions for various airfoils against
+    the predictions for slightly different Kulfan parameters (the epsilon
+    parameter). Also, the absolute tolerance for the tests was slightly higher
+    than the usual.
 
-    Current status:
-    - (epsilon=1e-3, atol=1e-3): 44 passed, 19612 failed, 0 errored, 0 broken.
-    - (epsilon=1e-4, atol=1e-3): 1825 passed, 17831 failed, 0 errored, 0 broken.
-    - (epsilon=1e-5, atol=1e-3): 7601 passed, 12055 failed, 0 errored, 0 broken.
+    Current status (airfoils/raw):
+    - (epsilon=1e-3, atol=1e-3): 27 passed, 9789 failed, 0 errored, 0 broken.
+    - (epsilon=1e-4, atol=1e-3): 1285 passed, 8531 failed, 0 errored, 0 broken.
+    - (epsilon=1e-5, atol=1e-3): 4968 passed, 4848 failed, 0 errored, 0 broken.
+
+    Current status (airfoils/uniform):
+    - (epsilon=1e-3, atol=1e-3): 27 passed, 9789 failed, 0 errored, 0 broken.
+    - (epsilon=1e-4, atol=1e-3): 1418 passed, 8398 failed, 0 errored, 0 broken.
+    - (epsilon=1e-5, atol=1e-3): 5636 passed, 4180 failed, 0 errored, 0 broken.
+
+1. `scripts/test_kulfan_to_coordinates.jl`
+
+    Test whether the Kulfan parameters obtained using NeuralFoil.jl and the
+    Python package generate the same set of coordinates.
+
+    Current status (airfoils/raw): 976 passed, 660 failed, 0 errored, 0 broken.\
+    Current status (airfoils/uniform): 840 passed, 796 failed, 0 errored, 0 broken.
+
 
 ## Setup
 
