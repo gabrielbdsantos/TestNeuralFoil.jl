@@ -1,0 +1,6 @@
+[deps]
+uv = ""
+python = "==3.10"
+
+[pip.deps]
+aerosandbox = ""

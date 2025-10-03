@@ -1,5 +1,14 @@
-ENV["JULIA_CONDAPKG_BACKEND"] = "Null"
-ENV["JULIA_PYTHONCALL_EXE"] = joinpath(pwd(), ".venv/bin/python")
+try
+    # Try to reuse the local installed conda environment
+    readdir(".CondaPkg")
+
+    ENV["JULIA_CONDAPKG_BACKEND"] = "Null"
+    ENV["JULIA_PYTHONCALL_EXE"] = joinpath(pwd(), split("/.CondaPkg/.pixi/envs/default/bin/python", "/")...)
+catch IOError
+    # Otherwise create a new Python environment and install the necessary packages
+    using CondaPkg
+    CondaPkg.add_pip("aerosandbox")
+end
 
 using Test
 using PythonCall
@@ -30,13 +39,23 @@ function -(a::T, b::T) where {T <: KulfanParameters}
 end
 
 
-function isapprox(a::T, b::T; kwargs...) where {T <: KulfanParameters}
-    all([
-        isapprox(a.lower_weights, b.lower_weights; kwargs...),
-        isapprox(a.upper_weights, b.upper_weights; kwargs...),
-        isapprox(a.leading_edge_weight, b.leading_edge_weight; kwargs...),
-        isapprox(a.TE_thickness, b.TE_thickness; kwargs...),
-    ])
+# function isapprox(a::T, b::T; kwargs...) where {T <: KulfanParameters}
+#     all([
+#         isapprox(a.lower_weights, b.lower_weights; kwargs...),
+#         isapprox(a.upper_weights, b.upper_weights; kwargs...),
+#         isapprox(a.leading_edge_weight, b.leading_edge_weight; kwargs...),
+#         isapprox(a.TE_thickness, b.TE_thickness; kwargs...),
+#     ])
+# end
+function isapprox(a::KulfanParameters, b::KulfanParameters; kwargs...)
+    all(
+        stack([
+            isapprox.(a.upper_weights, b.upper_weights; kwargs...);
+            isapprox.(a.lower_weights, b.lower_weights; kwargs...);
+            isapprox.(a.leading_edge_weight, b.leading_edge_weight; kwargs...);
+            isapprox.(a.TE_thickness, b.TE_thickness; kwargs...)
+        ])
+    )
 end
 
 

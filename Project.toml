@@ -1,4 +1,5 @@
 [deps]
+CondaPkg = "992eb4ea-22a4-4c89-a5bb-47a3300528ab"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 NeuralFoil = "a796ede8-0982-4285-a2cf-116db6b737e1"
 PythonCall = "6099a3de-0909-46bc-b1f4-468b9a2dfc0d"
